@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Issue Log</title>
+    <title>Project Issue Log - Collaborative</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -16,20 +19,82 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
-    <div id="app" class="min-h-screen p-6">
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2 text-center">Project Issue Log</h1>
+            <p class="text-gray-600 mb-6 text-center">Collaborative Issue Tracking System</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Access Code</label>
+                    <input type="password" id="access-code" placeholder="Enter access code" 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="login('admin')" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Admin Login
+                    </button>
+                    <button onclick="login('editor')" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Editor Login
+                    </button>
+                </div>
+                
+                <button onclick="login('viewer')" class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                    View Only Access
+                </button>
+            </div>
+
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg text-sm">
+                <p class="font-semibold text-blue-900 mb-2">Setup Instructions:</p>
+                <ol class="list-decimal list-inside text-blue-800 space-y-1">
+                    <li>Create a Firebase project at <a href="https://console.firebase.google.com" target="_blank" class="underline">console.firebase.google.com</a></li>
+                    <li>Enable Realtime Database & Authentication</li>
+                    <li>Copy your config and paste below</li>
+                    <li>Set access codes in the config section</li>
+                </ol>
+            </div>
+
+            <button onclick="showConfigModal()" class="w-full mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                ⚙️ Configure Firebase
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="min-h-screen p-6" style="display: none;">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900">Project Issue Log</h1>
-                        <p class="text-gray-600 mt-1">Track and manage project issues effectively</p>
+                        <p class="text-gray-600 mt-1">
+                            <span id="user-role-badge" class="inline-block px-3 py-1 rounded-full text-sm font-semibold"></span>
+                            <span class="ml-2">Real-time collaborative tracking</span>
+                        </p>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="addNewIssue()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <div class="flex gap-3 flex-wrap">
+                        <button id="add-issue-btn" onclick="addNewIssue()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             Add Issue
                         </button>
@@ -37,9 +102,13 @@
                             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             Export CSV
                         </button>
-                        <button onclick="saveToLocalStorage()" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                            Save
+                        <button onclick="showShareModal()" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            Share
+                        </button>
+                        <button onclick="logout()" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                            Logout
                         </button>
                     </div>
                 </div>
@@ -71,62 +140,286 @@
             </div>
 
             <!-- Empty State -->
-            <div id="empty-state" class="bg-white rounded-lg shadow-md p-12 text-center hidden">
+            <div id="empty-state" class="bg-white rounded-lg shadow-md p-12 text-center">
                 <p class="text-gray-500 text-lg">No issues logged yet. Click "Add Issue" to get started.</p>
             </div>
         </div>
     </div>
 
+    <!-- Configuration Modal -->
+    <div id="config-modal" class="modal">
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Firebase Configuration</h2>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input type="text" id="config-apiKey" placeholder="AIzaSy..." class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Auth Domain</label>
+                    <input type="text" id="config-authDomain" placeholder="your-project.firebaseapp.com" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Database URL</label>
+                    <input type="text" id="config-databaseURL" placeholder="https://your-project.firebaseio.com" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                    <input type="text" id="config-projectId" placeholder="your-project-id" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Storage Bucket</label>
+                    <input type="text" id="config-storageBucket" placeholder="your-project.appspot.com" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Messaging Sender ID</label>
+                    <input type="text" id="config-messagingSenderId" placeholder="123456789" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">App ID</label>
+                    <input type="text" id="config-appId" placeholder="1:123456789:web:..." class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                
+                <hr class="my-6">
+                
+                <h3 class="text-lg font-bold text-gray-900 mb-3">Access Codes</h3>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Admin Code (Full access)</label>
+                    <input type="password" id="config-adminCode" placeholder="Set admin password" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Editor Code (Can edit)</label>
+                    <input type="password" id="config-editorCode" placeholder="Set editor password" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Viewer Code (Read-only)</label>
+                    <input type="password" id="config-viewerCode" placeholder="Set viewer password (optional)" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="saveConfig()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Save Configuration
+                </button>
+                <button onclick="closeConfigModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal">
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Share Issue Log</h2>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Share URL</label>
+                    <input type="text" id="share-url" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                    <button onclick="copyShareUrl()" class="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        Copy URL
+                    </button>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg text-sm">
+                    <p class="font-semibold text-gray-900 mb-2">Access Levels:</p>
+                    <ul class="space-y-1 text-gray-700">
+                        <li><strong>Admin:</strong> Full control (add, edit, delete)</li>
+                        <li><strong>Editor:</strong> Can add and edit issues</li>
+                        <li><strong>Viewer:</strong> Read-only access</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeShareModal()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                Close
+            </button>
+        </div>
+    </div>
+
     <script>
-        // Data Storage
-        let issues = [];
+        // Global variables
+        let db = null;
+        let currentUser = null;
+        let userRole = null;
+        let issues = {};
         let editingId = null;
+        let firebaseConfig = null;
+        let accessCodes = {
+            admin: '',
+            editor: '',
+            viewer: ''
+        };
 
         const categories = ['Resource', 'Technical', 'Budget', 'Schedule', 'Quality', 'Scope', 'Communication', 'Other'];
         const priorities = ['Critical', 'High', 'Medium', 'Low'];
         const statuses = ['Open', 'In Progress', 'On Hold', 'Resolved', 'Closed'];
 
-        // Load data from localStorage on page load
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('issueLogData');
-            if (saved) {
-                try {
-                    issues = JSON.parse(saved);
-                    showNotification('Data loaded successfully!', 'success');
-                } catch (e) {
-                    console.error('Error loading data:', e);
-                }
-            } else {
-                // Add sample issue if no data exists
-                issues = [{
-                    id: 'ISS-001',
-                    title: 'Resource availability conflict',
-                    description: 'Key developer unavailable during critical sprint',
-                    category: 'Resource',
-                    priority: 'High',
-                    status: 'Open',
-                    raisedBy: 'John Smith',
-                    assignedTo: 'Sarah Johnson',
-                    dateRaised: '2024-12-10',
-                    targetDate: '2024-12-20',
-                    actualDate: '',
-                    impact: 'Schedule delay of 5 days',
-                    resolution: '',
-                    notes: 'Discussing backup resource options'
-                }];
+        // Load configuration from localStorage
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            const savedCodes = localStorage.getItem('accessCodes');
+            
+            if (savedConfig) {
+                firebaseConfig = JSON.parse(savedConfig);
             }
-            renderIssues();
-            updateStatistics();
+            if (savedCodes) {
+                accessCodes = JSON.parse(savedCodes);
+            }
         }
 
-        // Save data to localStorage
-        function saveToLocalStorage() {
-            try {
-                localStorage.setItem('issueLogData', JSON.stringify(issues));
-                showNotification('Data saved successfully!', 'success');
-            } catch (e) {
-                showNotification('Error saving data: ' + e.message, 'error');
+        // Show/hide modals
+        function showConfigModal() {
+            document.getElementById('config-modal').classList.add('active');
+            if (firebaseConfig) {
+                document.getElementById('config-apiKey').value = firebaseConfig.apiKey || '';
+                document.getElementById('config-authDomain').value = firebaseConfig.authDomain || '';
+                document.getElementById('config-databaseURL').value = firebaseConfig.databaseURL || '';
+                document.getElementById('config-projectId').value = firebaseConfig.projectId || '';
+                document.getElementById('config-storageBucket').value = firebaseConfig.storageBucket || '';
+                document.getElementById('config-messagingSenderId').value = firebaseConfig.messagingSenderId || '';
+                document.getElementById('config-appId').value = firebaseConfig.appId || '';
             }
+            if (accessCodes) {
+                document.getElementById('config-adminCode').value = accessCodes.admin || '';
+                document.getElementById('config-editorCode').value = accessCodes.editor || '';
+                document.getElementById('config-viewerCode').value = accessCodes.viewer || '';
+            }
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.remove('active');
+        }
+
+        function showShareModal() {
+            document.getElementById('share-url').value = window.location.href;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.remove('active');
+        }
+
+        function copyShareUrl() {
+            const urlInput = document.getElementById('share-url');
+            urlInput.select();
+            document.execCommand('copy');
+            showNotification('URL copied to clipboard!', 'success');
+        }
+
+        // Save configuration
+        function saveConfig() {
+            firebaseConfig = {
+                apiKey: document.getElementById('config-apiKey').value,
+                authDomain: document.getElementById('config-authDomain').value,
+                databaseURL: document.getElementById('config-databaseURL').value,
+                projectId: document.getElementById('config-projectId').value,
+                storageBucket: document.getElementById('config-storageBucket').value,
+                messagingSenderId: document.getElementById('config-messagingSenderId').value,
+                appId: document.getElementById('config-appId').value
+            };
+
+            accessCodes = {
+                admin: document.getElementById('config-adminCode').value,
+                editor: document.getElementById('config-editorCode').value,
+                viewer: document.getElementById('config-viewerCode').value
+            };
+
+            localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
+            localStorage.setItem('accessCodes', JSON.stringify(accessCodes));
+
+            closeConfigModal();
+            showNotification('Configuration saved! Please refresh the page.', 'success');
+        }
+
+        // Initialize Firebase
+        function initializeFirebase() {
+            if (!firebaseConfig || !firebaseConfig.apiKey) {
+                showNotification('Please configure Firebase first', 'error');
+                return false;
+            }
+
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                return true;
+            } catch (error) {
+                showNotification('Firebase initialization error: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Login
+        function login(role) {
+            const code = document.getElementById('access-code').value;
+            
+            if (role === 'viewer' && !accessCodes.viewer) {
+                // Allow viewer access without code if not set
+                authenticateUser(role);
+                return;
+            }
+
+            if (code === accessCodes[role]) {
+                authenticateUser(role);
+            } else {
+                showNotification('Invalid access code', 'error');
+            }
+        }
+
+        function authenticateUser(role) {
+            if (!initializeFirebase()) {
+                return;
+            }
+
+            userRole = role;
+            currentUser = 'user_' + Date.now();
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            
+            updateUIForRole();
+            setupRealtimeListener();
+            showNotification(`Logged in as ${role}`, 'success');
+        }
+
+        // Update UI based on role
+        function updateUIForRole() {
+            const roleBadge = document.getElementById('user-role-badge');
+            const addButton = document.getElementById('add-issue-btn');
+            
+            if (userRole === 'admin') {
+                roleBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800';
+                roleBadge.textContent = '👑 Admin';
+                addButton.style.display = 'flex';
+            } else if (userRole === 'editor') {
+                roleBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
+                roleBadge.textContent = '✏️ Editor';
+                addButton.style.display = 'flex';
+            } else {
+                roleBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800';
+                roleBadge.textContent = '👁️ Viewer';
+                addButton.style.display = 'none';
+            }
+        }
+
+        // Logout
+        function logout() {
+            userRole = null;
+            currentUser = null;
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('access-code').value = '';
+        }
+
+        // Setup realtime listener
+        function setupRealtimeListener() {
+            db.ref('issues').on('value', (snapshot) => {
+                issues = snapshot.val() || {};
+                renderIssues();
+                updateStatistics();
+            });
         }
 
         // Show notification
@@ -140,7 +433,7 @@
             }, 3000);
         }
 
-        // Get priority color classes
+        // Get priority/status colors
         function getPriorityColor(priority) {
             const colors = {
                 'Critical': 'bg-red-100 text-red-800 border-red-300',
@@ -151,7 +444,6 @@
             return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
         }
 
-        // Get status color classes
         function getStatusColor(status) {
             const colors = {
                 'Open': 'bg-blue-100 text-blue-800 border-blue-300',
@@ -163,10 +455,27 @@
             return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
         }
 
+        // Check permissions
+        function canEdit() {
+            return userRole === 'admin' || userRole === 'editor';
+        }
+
+        function canDelete() {
+            return userRole === 'admin';
+        }
+
         // Add new issue
         function addNewIssue() {
+            if (!canEdit()) {
+                showNotification('You do not have permission to add issues', 'error');
+                return;
+            }
+
+            const issueCount = Object.keys(issues).length;
+            const newIssueId = `ISS-${String(issueCount + 1).padStart(3, '0')}`;
+            
             const newIssue = {
-                id: `ISS-${String(issues.length + 1).padStart(3, '0')}`,
+                id: newIssueId,
                 title: '',
                 description: '',
                 category: 'Other',
@@ -179,33 +488,50 @@
                 actualDate: '',
                 impact: '',
                 resolution: '',
-                notes: ''
+                notes: '',
+                createdAt: Date.now(),
+                createdBy: currentUser
             };
-            issues.push(newIssue);
-            editingId = newIssue.id;
-            renderIssues();
-            updateStatistics();
-            saveToLocalStorage();
+
+            db.ref('issues/' + newIssueId).set(newIssue)
+                .then(() => {
+                    editingId = newIssueId;
+                    renderIssues();
+                    showNotification('Issue created successfully!', 'success');
+                })
+                .catch((error) => {
+                    showNotification('Error creating issue: ' + error.message, 'error');
+                });
         }
 
         // Delete issue
         function deleteIssue(id) {
+            if (!canDelete()) {
+                showNotification('You do not have permission to delete issues', 'error');
+                return;
+            }
+
             if (confirm('Are you sure you want to delete this issue?')) {
-                issues = issues.filter(issue => issue.id !== id);
-                renderIssues();
-                updateStatistics();
-                saveToLocalStorage();
-                showNotification('Issue deleted successfully!', 'success');
+                db.ref('issues/' + id).remove()
+                    .then(() => {
+                        showNotification('Issue deleted successfully!', 'success');
+                    })
+                    .catch((error) => {
+                        showNotification('Error deleting issue: ' + error.message, 'error');
+                    });
             }
         }
 
-        // Start editing
+        // Start/cancel edit
         function startEdit(id) {
+            if (!canEdit()) {
+                showNotification('You do not have permission to edit issues', 'error');
+                return;
+            }
             editingId = id;
             renderIssues();
         }
 
-        // Cancel edit
         function cancelEdit() {
             editingId = null;
             renderIssues();
@@ -216,58 +542,63 @@
             const form = document.getElementById(`edit-form-${id}`);
             const formData = new FormData(form);
             
-            const issueIndex = issues.findIndex(i => i.id === id);
-            if (issueIndex !== -1) {
-                issues[issueIndex] = {
-                    ...issues[issueIndex],
-                    title: formData.get('title'),
-                    description: formData.get('description'),
-                    category: formData.get('category'),
-                    priority: formData.get('priority'),
-                    status: formData.get('status'),
-                    raisedBy: formData.get('raisedBy'),
-                    assignedTo: formData.get('assignedTo'),
-                    dateRaised: formData.get('dateRaised'),
-                    targetDate: formData.get('targetDate'),
-                    actualDate: formData.get('actualDate'),
-                    impact: formData.get('impact'),
-                    resolution: formData.get('resolution'),
-                    notes: formData.get('notes')
-                };
-            }
-            
-            editingId = null;
-            renderIssues();
-            updateStatistics();
-            saveToLocalStorage();
-            showNotification('Issue updated successfully!', 'success');
+            const updatedIssue = {
+                ...issues[id],
+                title: formData.get('title'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                priority: formData.get('priority'),
+                status: formData.get('status'),
+                raisedBy: formData.get('raisedBy'),
+                assignedTo: formData.get('assignedTo'),
+                dateRaised: formData.get('dateRaised'),
+                targetDate: formData.get('targetDate'),
+                actualDate: formData.get('actualDate'),
+                impact: formData.get('impact'),
+                resolution: formData.get('resolution'),
+                notes: formData.get('notes'),
+                lastModified: Date.now(),
+                lastModifiedBy: currentUser
+            };
+
+            db.ref('issues/' + id).update(updatedIssue)
+                .then(() => {
+                    editingId = null;
+                    renderIssues();
+                    showNotification('Issue updated successfully!', 'success');
+                })
+                .catch((error) => {
+                    showNotification('Error updating issue: ' + error.message, 'error');
+                });
         }
 
         // Update statistics
         function updateStatistics() {
+            const issuesArray = Object.values(issues);
             document.getElementById('stat-critical').textContent = 
-                issues.filter(i => i.priority === 'Critical' || i.priority === 'High').length;
+                issuesArray.filter(i => i.priority === 'Critical' || i.priority === 'High').length;
             document.getElementById('stat-open').textContent = 
-                issues.filter(i => i.status === 'Open').length;
+                issuesArray.filter(i => i.status === 'Open').length;
             document.getElementById('stat-progress').textContent = 
-                issues.filter(i => i.status === 'In Progress').length;
+                issuesArray.filter(i => i.status === 'In Progress').length;
             document.getElementById('stat-resolved').textContent = 
-                issues.filter(i => i.status === 'Resolved' || i.status === 'Closed').length;
+                issuesArray.filter(i => i.status === 'Resolved' || i.status === 'Closed').length;
         }
 
         // Render issues
         function renderIssues() {
             const container = document.getElementById('issues-container');
             const emptyState = document.getElementById('empty-state');
+            const issuesArray = Object.values(issues);
             
-            if (issues.length === 0) {
+            if (issuesArray.length === 0) {
                 container.innerHTML = '';
-                emptyState.classList.remove('hidden');
+                emptyState.style.display = 'block';
                 return;
             }
             
-            emptyState.classList.add('hidden');
-            container.innerHTML = issues.map(issue => {
+            emptyState.style.display = 'none';
+            container.innerHTML = issuesArray.map(issue => {
                 if (editingId === issue.id) {
                     return renderEditForm(issue);
                 } else {
@@ -294,77 +625,29 @@
                             </div>
                             <div class="flex gap-2 ml-4">
                                 <button type="button" onclick="saveEdit('${issue.id}')" class="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                                 </button>
                                 <button type="button" onclick="cancelEdit()" class="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 </button>
                             </div>
                         </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea name="description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">${issue.description}</textarea>
-                        </div>
-
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Description</label><textarea name="description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md">${issue.description}</textarea></div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                                    ${categories.map(cat => `<option value="${cat}" ${issue.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                                <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                                    ${priorities.map(pri => `<option value="${pri}" ${issue.priority === pri ? 'selected' : ''}>${pri}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                                    ${statuses.map(stat => `<option value="${stat}" ${issue.status === stat ? 'selected' : ''}>${stat}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Date Raised</label>
-                                <input type="date" name="dateRaised" value="${issue.dateRaised}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Category</label><select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md">${categories.map(cat => `<option value="${cat}" ${issue.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}</select></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Priority</label><select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-md">${priorities.map(pri => `<option value="${pri}" ${issue.priority === pri ? 'selected' : ''}>${pri}</option>`).join('')}</select></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Status</label><select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md">${statuses.map(stat => `<option value="${stat}" ${issue.status === stat ? 'selected' : ''}>${stat}</option>`).join('')}</select></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Date Raised</label><input type="date" name="dateRaised" value="${issue.dateRaised}" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
                         </div>
-
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Raised By</label>
-                                <input type="text" name="raisedBy" value="${issue.raisedBy}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-                                <input type="text" name="assignedTo" value="${issue.assignedTo}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
-                                <input type="date" name="targetDate" value="${issue.targetDate}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Actual Resolution Date</label>
-                                <input type="date" name="actualDate" value="${issue.actualDate}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Raised By</label><input type="text" name="raisedBy" value="${issue.raisedBy}" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label><input type="text" name="assignedTo" value="${issue.assignedTo}" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label><input type="date" name="targetDate" value="${issue.targetDate}" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Actual Date</label><input type="date" name="actualDate" value="${issue.actualDate}" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
                         </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Impact</label>
-                            <textarea name="impact" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">${issue.impact}</textarea>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Resolution</label>
-                            <textarea name="resolution" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">${issue.resolution}</textarea>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                            <textarea name="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">${issue.notes}</textarea>
-                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Impact</label><textarea name="impact" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md">${issue.impact}</textarea></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Resolution</label><textarea name="resolution" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md">${issue.resolution}</textarea></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea name="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md">${issue.notes}</textarea></div>
                     </form>
                 </div>
             `;
@@ -372,85 +655,48 @@
 
         // Render issue card
         function renderIssueCard(issue) {
+            const canEditIssue = canEdit();
+            const canDeleteIssue = canDelete();
+            
             return `
                 <div class="bg-white rounded-lg shadow-md p-6 fade-in">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex-1">
                             <div class="flex flex-wrap items-center gap-3 mb-2">
                                 <span class="font-mono text-sm font-semibold text-gray-600">${issue.id}</span>
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(issue.priority)}">
-                                    ${issue.priority}
-                                </span>
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(issue.status)}">
-                                    ${issue.status}
-                                </span>
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">
-                                    ${issue.category}
-                                </span>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(issue.priority)}">${issue.priority}</span>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(issue.status)}">${issue.status}</span>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">${issue.category}</span>
                             </div>
                             <h3 class="text-xl font-bold text-gray-900 mb-2">${issue.title || '(No title)'}</h3>
                             <p class="text-gray-700 mb-3">${issue.description || '(No description)'}</p>
                         </div>
                         <div class="flex gap-2 ml-4">
-                            <button onclick="startEdit('${issue.id}')" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-                            <button onclick="deleteIssue('${issue.id}')" class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
+                            ${canEditIssue ? `<button onclick="startEdit('${issue.id}')" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>` : ''}
+                            ${canDeleteIssue ? `<button onclick="deleteIssue('${issue.id}')" class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
                         </div>
                     </div>
-
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3 text-sm">
-                        <div>
-                            <span class="font-semibold text-gray-600">Raised By:</span>
-                            <p class="text-gray-900">${issue.raisedBy || '-'}</p>
-                        </div>
-                        <div>
-                            <span class="font-semibold text-gray-600">Assigned To:</span>
-                            <p class="text-gray-900">${issue.assignedTo || '-'}</p>
-                        </div>
-                        <div>
-                            <span class="font-semibold text-gray-600">Date Raised:</span>
-                            <p class="text-gray-900">${issue.dateRaised || '-'}</p>
-                        </div>
-                        <div>
-                            <span class="font-semibold text-gray-600">Target Date:</span>
-                            <p class="text-gray-900">${issue.targetDate || '-'}</p>
-                        </div>
+                        <div><span class="font-semibold text-gray-600">Raised By:</span><p class="text-gray-900">${issue.raisedBy || '-'}</p></div>
+                        <div><span class="font-semibold text-gray-600">Assigned To:</span><p class="text-gray-900">${issue.assignedTo || '-'}</p></div>
+                        <div><span class="font-semibold text-gray-600">Date Raised:</span><p class="text-gray-900">${issue.dateRaised || '-'}</p></div>
+                        <div><span class="font-semibold text-gray-600">Target Date:</span><p class="text-gray-900">${issue.targetDate || '-'}</p></div>
                     </div>
-
-                    ${issue.impact ? `
-                        <div class="mb-3 text-sm">
-                            <span class="font-semibold text-gray-600">Impact:</span>
-                            <p class="text-gray-900">${issue.impact}</p>
-                        </div>
-                    ` : ''}
-
-                    ${issue.resolution ? `
-                        <div class="mb-3 text-sm">
-                            <span class="font-semibold text-gray-600">Resolution:</span>
-                            <p class="text-gray-900">${issue.resolution}</p>
-                        </div>
-                    ` : ''}
-
-                    ${issue.notes ? `
-                        <div class="text-sm">
-                            <span class="font-semibold text-gray-600">Notes:</span>
-                            <p class="text-gray-900">${issue.notes}</p>
-                        </div>
-                    ` : ''}
+                    ${issue.impact ? `<div class="mb-3 text-sm"><span class="font-semibold text-gray-600">Impact:</span><p class="text-gray-900">${issue.impact}</p></div>` : ''}
+                    ${issue.resolution ? `<div class="mb-3 text-sm"><span class="font-semibold text-gray-600">Resolution:</span><p class="text-gray-900">${issue.resolution}</p></div>` : ''}
+                    ${issue.notes ? `<div class="text-sm"><span class="font-semibold text-gray-600">Notes:</span><p class="text-gray-900">${issue.notes}</p></div>` : ''}
                 </div>
             `;
         }
 
         // Export to CSV
         function exportToCSV() {
+            const issuesArray = Object.values(issues);
             const headers = ['Issue ID', 'Title', 'Description', 'Category', 'Priority', 'Status', 'Raised By', 'Assigned To', 'Date Raised', 'Target Date', 'Actual Resolution Date', 'Impact', 'Resolution', 'Notes'];
             
             const csvContent = [
                 headers.join(','),
-                ...issues.map(issue => [
+                ...issuesArray.map(issue => [
                     issue.id,
                     `"${(issue.title || '').replace(/"/g, '""')}"`,
                     `"${(issue.description || '').replace(/"/g, '""')}"`,
@@ -478,21 +724,16 @@
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
             showNotification('CSV exported successfully!', 'success');
         }
 
         // Initialize app
         window.onload = function() {
-            loadFromLocalStorage();
-        };
-
-        // Auto-save every 30 seconds
-        setInterval(() => {
-            if (issues.length > 0) {
-                saveToLocalStorage();
+            loadConfig();
+            if (!firebaseConfig) {
+                showNotification('Please configure Firebase to get started', 'error');
             }
-        }, 30000);
+        };
     </script>
 </body>
 </html>
