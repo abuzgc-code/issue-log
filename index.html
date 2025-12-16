@@ -9,217 +9,91 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-        .fade-in {
-            animation: fadeIn 0.3s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Login Screen -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
             <h1 class="text-3xl font-bold text-gray-900 mb-2 text-center">Project Issue Log</h1>
-            <p class="text-gray-600 mb-6 text-center">Collaborative Issue Tracking System</p>
-            
+            <p class="text-gray-600 mb-6 text-center">Collaborative Issue Tracking</p>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Access Code</label>
-                    <input type="password" id="access-code" placeholder="Enter access code" 
-                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        onkeypress="if(event.key === 'Enter') document.getElementById('quick-login-btn').click()">
+                    <input type="password" id="access-code" placeholder="Enter access code" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" onkeypress="if(event.key==='Enter') quickLogin()">
                 </div>
-                
-                <button id="quick-login-btn" onclick="quickLogin()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                    Login
-                </button>
-                
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-gray-500">Or select role</span>
-                    </div>
-                </div>
-                
+                <button onclick="quickLogin()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold">Login</button>
+                <div class="relative"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-gray-500">Or select role</span></div></div>
                 <div class="flex gap-2">
-                    <button onclick="login('admin')" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
-                        👑 Admin
-                    </button>
-                    <button onclick="login('editor')" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
-                        ✏️ Editor
-                    </button>
-                    <button onclick="login('viewer')" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
-                        👁️ Viewer
-                    </button>
+                    <button onclick="login('admin')" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm">👑 Admin</button>
+                    <button onclick="login('editor')" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">✏️ Editor</button>
+                    <button onclick="login('viewer')" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm">👁️ Viewer</button>
                 </div>
             </div>
-
             <div class="mt-6 p-4 bg-blue-50 rounded-lg text-sm">
                 <p class="font-semibold text-blue-900 mb-2">Access Levels:</p>
                 <ul class="space-y-1 text-blue-800 text-xs">
-                    <li><strong>👑 Admin:</strong> Full control (add, edit, delete)</li>
-                    <li><strong>✏️ Editor:</strong> Can add and edit issues</li>
-                    <li><strong>👁️ Viewer:</strong> Read-only access</li>
+                    <li><strong>👑 Admin:</strong> Full control</li>
+                    <li><strong>✏️ Editor:</strong> Can add/edit</li>
+                    <li><strong>👁️ Viewer:</strong> Read-only</li>
                 </ul>
             </div>
-
-            <button onclick="showConfigModal()" class="w-full mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm">
-                ⚙️ Change Access Codes
-            </button>
+            <button onclick="showConfigModal()" class="w-full mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">⚙️ Change Codes</button>
         </div>
     </div>
 
-    <!-- Main App -->
-    <div id="app" class="min-h-screen p-6" style="display: none;">
+    <div id="app" class="min-h-screen p-6" style="display:none;">
         <div class="max-w-7xl mx-auto">
-            <!-- Header -->
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900">Project Issue Log</h1>
-                        <p class="text-gray-600 mt-1">
-                            <span id="user-role-badge" class="inline-block px-3 py-1 rounded-full text-sm font-semibold"></span>
-                            <span class="ml-2">Real-time collaborative tracking</span>
-                        </p>
+                        <p class="text-gray-600 mt-1"><span id="user-role-badge" class="inline-block px-3 py-1 rounded-full text-sm font-semibold"></span><span class="ml-2">Real-time tracking</span></p>
                     </div>
                     <div class="flex gap-3 flex-wrap">
-                        <button id="add-issue-btn" onclick="addNewIssue()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            Add Issue
+                        <button id="add-issue-btn" onclick="addNewIssue()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Issue
                         </button>
-                        <button onclick="exportToCSV()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Export CSV
+                        <button onclick="exportToCSV()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Export
                         </button>
-                        <button onclick="showShareModal()" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            Share
-                        </button>
-                        <button onclick="logout()" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            Logout
+                        <button onclick="logout()" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Logout
                         </button>
                     </div>
                 </div>
-
-                <!-- Statistics Dashboard -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div class="text-red-600 text-sm font-medium">Critical/High</div>
-                        <div id="stat-critical" class="text-2xl font-bold text-red-700">0</div>
-                    </div>
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div class="text-blue-600 text-sm font-medium">Open Issues</div>
-                        <div id="stat-open" class="text-2xl font-bold text-blue-700">0</div>
-                    </div>
-                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <div class="text-purple-600 text-sm font-medium">In Progress</div>
-                        <div id="stat-progress" class="text-2xl font-bold text-purple-700">0</div>
-                    </div>
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div class="text-green-600 text-sm font-medium">Resolved/Closed</div>
-                        <div id="stat-resolved" class="text-2xl font-bold text-green-700">0</div>
-                    </div>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4"><div class="text-red-600 text-sm font-medium">Critical/High</div><div id="stat-critical" class="text-2xl font-bold text-red-700">0</div></div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4"><div class="text-blue-600 text-sm font-medium">Open</div><div id="stat-open" class="text-2xl font-bold text-blue-700">0</div></div>
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4"><div class="text-purple-600 text-sm font-medium">In Progress</div><div id="stat-progress" class="text-2xl font-bold text-purple-700">0</div></div>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4"><div class="text-green-600 text-sm font-medium">Resolved</div><div id="stat-resolved" class="text-2xl font-bold text-green-700">0</div></div>
                 </div>
             </div>
-
-            <!-- Issues List -->
             <div id="issues-container" class="space-y-4"></div>
-
-            <!-- Empty State -->
-            <div id="empty-state" class="bg-white rounded-lg shadow-md p-12 text-center">
-                <p class="text-gray-500 text-lg">No issues logged yet. Click "Add Issue" to get started.</p>
-            </div>
+            <div id="empty-state" class="bg-white rounded-lg shadow-md p-12 text-center"><p class="text-gray-500 text-lg">No issues yet. Click "Add Issue" to start.</p></div>
         </div>
     </div>
 
-    <!-- Configuration Modal -->
     <div id="config-modal" class="modal">
         <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Access Code Settings</h2>
-            
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Access Codes</h2>
             <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Admin Code (Full access)</label>
-                    <input type="password" id="config-adminCode" placeholder="Set admin password" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Editor Code (Can edit)</label>
-                    <input type="password" id="config-editorCode" placeholder="Set editor password" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Viewer Code (Read-only)</label>
-                    <input type="password" id="config-viewerCode" placeholder="Set viewer password (leave empty for open access)" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                </div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Admin Code</label><input type="password" id="config-adminCode" placeholder="Admin password" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Editor Code</label><input type="password" id="config-editorCode" placeholder="Editor password" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Viewer Code</label><input type="password" id="config-viewerCode" placeholder="Leave empty for no password" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
             </div>
-
             <div class="flex gap-3">
-                <button onclick="saveConfig()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    Save Codes
-                </button>
-                <button onclick="closeConfigModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
-                    Cancel
-                </button>
+                <button onclick="saveConfig()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save</button>
+                <button onclick="closeConfigModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cancel</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Share Modal -->
-    <div id="share-modal" class="modal">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Share Issue Log</h2>
-            
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Share URL</label>
-                    <input type="text" id="share-url" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
-                    <button onclick="copyShareUrl()" class="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                        📋 Copy URL
-                    </button>
-                </div>
-                
-                <div class="bg-gray-50 p-4 rounded-lg text-sm">
-                    <p class="font-semibold text-gray-900 mb-2">Access Levels:</p>
-                    <ul class="space-y-1 text-gray-700">
-                        <li><strong>👑 Admin:</strong> Full control (add, edit, delete)</li>
-                        <li><strong>✏️ Editor:</strong> Can add and edit issues</li>
-                        <li><strong>👁️ Viewer:</strong> Read-only access</li>
-                    </ul>
-                    <p class="mt-3 text-xs text-gray-600">Share the URL along with the appropriate access code for each user's role.</p>
-                </div>
-            </div>
-
-            <button onclick="closeShareModal()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
-                Close
-            </button>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration (Pre-configured)
         const firebaseConfig = {
             apiKey: "AIzaSyAcqsDkMKCKphPPVHb0p3D7mvuNVFJW-uo",
             authDomain: "issue-log-fe755.firebaseapp.com",
@@ -230,320 +104,250 @@
             appId: "1:1676137668:web:27fcc2f8a8f9e3e6d2a591"
         };
 
-        // Global variables
-        let db = null;
-        let currentUser = null;
-        let userRole = null;
-        let issues = {};
-        let editingId = null;
-        let accessCodes = {
-            admin: 'admin123',
-            editor: 'editor123',
-            viewer: '' // Empty means no password required for viewer
-        };
-
+        let db, currentUser, userRole, issues = {}, editingId = null;
+        let accessCodes = {admin: 'admin123', editor: 'editor123', viewer: ''};
         const categories = ['Resource', 'Technical', 'Budget', 'Schedule', 'Quality', 'Scope', 'Communication', 'Other'];
         const priorities = ['Critical', 'High', 'Medium', 'Low'];
         const statuses = ['Open', 'In Progress', 'On Hold', 'Resolved', 'Closed'];
 
-        // Load access codes from localStorage
         function loadConfig() {
-            const savedCodes = localStorage.getItem('accessCodes');
-            if (savedCodes) {
-                accessCodes = JSON.parse(savedCodes);
-            }
+            const saved = localStorage.getItem('accessCodes');
+            if (saved) accessCodes = JSON.parse(saved);
         }
 
-        // Initialize Firebase
-        function initializeFirebase() {
+        function initFirebase() {
             try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
                 db = firebase.database();
                 return true;
-            } catch (error) {
-                showNotification('Firebase connection error: ' + error.message, 'error');
+            } catch (e) {
+                showNotification('Firebase error: ' + e.message, 'error');
                 return false;
             }
         }
 
-        // Quick login - automatically detect role
         function quickLogin() {
             const code = document.getElementById('access-code').value.trim();
-            
-            if (!code) {
-                showNotification('Please enter an access code', 'error');
-                return;
-            }
-
-            // Check which role matches
-            if (code === accessCodes.admin) {
-                authenticateUser('admin');
-            } else if (code === accessCodes.editor) {
-                authenticateUser('editor');
-            } else if (code === accessCodes.viewer || !accessCodes.viewer) {
-                authenticateUser('viewer');
-            } else {
-                showNotification('Invalid access code', 'error');
-            }
+            if (!code) { showNotification('Enter access code', 'error'); return; }
+            if (code === accessCodes.admin) authenticateUser('admin');
+            else if (code === accessCodes.editor) authenticateUser('editor');
+            else if (code === accessCodes.viewer || !accessCodes.viewer) authenticateUser('viewer');
+            else showNotification('Invalid code', 'error');
         }
 
-        // Login with specific role
         function login(role) {
             const code = document.getElementById('access-code').value.trim();
-            
-            // Viewer with no password set
-            if (role === 'viewer' && !accessCodes.viewer) {
-                authenticateUser(role);
-                return;
-            }
-
-            if (code === accessCodes[role]) {
-                authenticateUser(role);
-            } else {
-                showNotification('Invalid access code for ' + role, 'error');
-            }
+            if (role === 'viewer' && !accessCodes.viewer) { authenticateUser(role); return; }
+            if (code === accessCodes[role]) authenticateUser(role);
+            else showNotification('Invalid code for ' + role, 'error');
         }
 
         function authenticateUser(role) {
-            if (!initializeFirebase()) {
-                return;
-            }
-
+            if (!initFirebase()) return;
             userRole = role;
             currentUser = 'user_' + Date.now();
-            
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
-            
             updateUIForRole();
             setupRealtimeListener();
-            showNotification(`Logged in as ${role}`, 'success');
+            showNotification('Logged in as ' + role, 'success');
         }
 
-        // Update UI based on role
         function updateUIForRole() {
-            const roleBadge = document.getElementById('user-role-badge');
-            const addButton = document.getElementById('add-issue-btn');
-            
+            const badge = document.getElementById('user-role-badge');
+            const btn = document.getElementById('add-issue-btn');
             if (userRole === 'admin') {
-                roleBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800';
-                roleBadge.textContent = '👑 Admin';
-                addButton.style.display = 'flex';
+                badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800';
+                badge.textContent = '👑 Admin';
+                btn.style.display = 'flex';
             } else if (userRole === 'editor') {
-                roleBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
-                roleBadge.textContent = '✏️ Editor';
-                addButton.style.display = 'flex';
+                badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
+                badge.textContent = '✏️ Editor';
+                btn.style.display = 'flex';
             } else {
-                roleBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800';
-                roleBadge.textContent = '👁️ Viewer';
-                addButton.style.display = 'none';
+                badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800';
+                badge.textContent = '👁️ Viewer';
+                btn.style.display = 'none';
             }
         }
 
-        // Logout
         function logout() {
             userRole = null;
-            currentUser = null;
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('app').style.display = 'none';
             document.getElementById('access-code').value = '';
         }
 
-        // Setup realtime listener
         function setupRealtimeListener() {
-            db.ref('issues').on('value', (snapshot) => {
-                issues = snapshot.val() || {};
+            db.ref('issues').on('value', snap => {
+                issues = snap.val() || {};
                 renderIssues();
                 updateStatistics();
             });
         }
 
-        // Show notification
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 fade-in ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+        function showNotification(msg, type) {
+            const n = document.createElement('div');
+            n.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 fade-in ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+            n.textContent = msg;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 3000);
         }
 
-        // Color functions
-        function getPriorityColor(priority) {
-            const colors = {
-                'Critical': 'bg-red-100 text-red-800 border-red-300',
-                'High': 'bg-orange-100 text-orange-800 border-orange-300',
-                'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-                'Low': 'bg-green-100 text-green-800 border-green-300'
-            };
-            return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
+        function getPriorityColor(p) {
+            return {Critical: 'bg-red-100 text-red-800 border-red-300', High: 'bg-orange-100 text-orange-800 border-orange-300', Medium: 'bg-yellow-100 text-yellow-800 border-yellow-300', Low: 'bg-green-100 text-green-800 border-green-300'}[p] || 'bg-gray-100 text-gray-800 border-gray-300';
         }
 
-        function getStatusColor(status) {
-            const colors = {
-                'Open': 'bg-blue-100 text-blue-800 border-blue-300',
-                'In Progress': 'bg-purple-100 text-purple-800 border-purple-300',
-                'On Hold': 'bg-gray-100 text-gray-800 border-gray-300',
-                'Resolved': 'bg-green-100 text-green-800 border-green-300',
-                'Closed': 'bg-slate-100 text-slate-800 border-slate-300'
-            };
-            return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+        function getStatusColor(s) {
+            return {Open: 'bg-blue-100 text-blue-800 border-blue-300', 'In Progress': 'bg-purple-100 text-purple-800 border-purple-300', 'On Hold': 'bg-gray-100 text-gray-800 border-gray-300', Resolved: 'bg-green-100 text-green-800 border-green-300', Closed: 'bg-slate-100 text-slate-800 border-slate-300'}[s] || 'bg-gray-100 text-gray-800 border-gray-300';
         }
 
-        // Permission checks
-        function canEdit() {
-            return userRole === 'admin' || userRole === 'editor';
-        }
+        function canEdit() { return userRole === 'admin' || userRole === 'editor'; }
+        function canDelete() { return userRole === 'admin'; }
 
-        function canDelete() {
-            return userRole === 'admin';
-        }
-
-        // CRUD operations
         function addNewIssue() {
-            if (!canEdit()) {
-                showNotification('You do not have permission to add issues', 'error');
-                return;
-            }
-
-            const issueCount = Object.keys(issues).length;
-            const newIssueId = `ISS-${String(issueCount + 1).padStart(3, '0')}`;
-            
-            const newIssue = {
-                id: newIssueId,
-                title: '',
-                description: '',
-                category: 'Other',
-                priority: 'Medium',
-                status: 'Open',
-                raisedBy: '',
-                assignedTo: '',
-                dateRaised: new Date().toISOString().split('T')[0],
-                targetDate: '',
-                actualDate: '',
-                impact: '',
-                resolution: '',
-                notes: '',
-                createdAt: Date.now(),
-                createdBy: currentUser
-            };
-
-            db.ref('issues/' + newIssueId).set(newIssue)
-                .then(() => {
-                    editingId = newIssueId;
-                    renderIssues();
-                    showNotification('Issue created!', 'success');
-                })
-                .catch(error => showNotification('Error: ' + error.message, 'error'));
+            if (!canEdit()) { showNotification('No permission', 'error'); return; }
+            const id = `ISS-${String(Object.keys(issues).length + 1).padStart(3, '0')}`;
+            db.ref('issues/' + id).set({
+                id, title: '', description: '', category: 'Other', priority: 'Medium', status: 'Open',
+                raisedBy: '', assignedTo: '', dateRaised: new Date().toISOString().split('T')[0],
+                targetDate: '', actualDate: '', impact: '', resolution: '', notes: '',
+                createdAt: Date.now(), createdBy: currentUser
+            }).then(() => { editingId = id; renderIssues(); showNotification('Issue created!', 'success'); });
         }
 
         function deleteIssue(id) {
-            if (!canDelete()) {
-                showNotification('Only admins can delete issues', 'error');
-                return;
-            }
-
-            if (confirm('Delete this issue?')) {
-                db.ref('issues/' + id).remove()
-                    .then(() => showNotification('Issue deleted!', 'success'))
-                    .catch(error => showNotification('Error: ' + error.message, 'error'));
-            }
+            if (!canDelete()) { showNotification('Only admins can delete', 'error'); return; }
+            if (confirm('Delete?')) db.ref('issues/' + id).remove().then(() => showNotification('Deleted!', 'success'));
         }
 
         function startEdit(id) {
-            if (!canEdit()) {
-                showNotification('You do not have permission to edit', 'error');
-                return;
-            }
+            if (!canEdit()) { showNotification('No permission', 'error'); return; }
             editingId = id;
             renderIssues();
         }
 
-        function cancelEdit() {
-            editingId = null;
-            renderIssues();
-        }
+        function cancelEdit() { editingId = null; renderIssues(); }
 
         function saveEdit(id) {
             const form = document.getElementById(`edit-form-${id}`);
-            const formData = new FormData(form);
-            
-            const updatedIssue = {
+            const fd = new FormData(form);
+            db.ref('issues/' + id).update({
                 ...issues[id],
-                title: formData.get('title'),
-                description: formData.get('description'),
-                category: formData.get('category'),
-                priority: formData.get('priority'),
-                status: formData.get('status'),
-                raisedBy: formData.get('raisedBy'),
-                assignedTo: formData.get('assignedTo'),
-                dateRaised: formData.get('dateRaised'),
-                targetDate: formData.get('targetDate'),
-                actualDate: formData.get('actualDate'),
-                impact: formData.get('impact'),
-                resolution: formData.get('resolution'),
-                notes: formData.get('notes'),
-                lastModified: Date.now()
-            };
-
-            db.ref('issues/' + id).update(updatedIssue)
-                .then(() => {
-                    editingId = null;
-                    renderIssues();
-                    showNotification('Issue updated!', 'success');
-                })
-                .catch(error => showNotification('Error: ' + error.message, 'error'));
+                title: fd.get('title'), description: fd.get('description'), category: fd.get('category'),
+                priority: fd.get('priority'), status: fd.get('status'), raisedBy: fd.get('raisedBy'),
+                assignedTo: fd.get('assignedTo'), dateRaised: fd.get('dateRaised'), targetDate: fd.get('targetDate'),
+                actualDate: fd.get('actualDate'), impact: fd.get('impact'), resolution: fd.get('resolution'),
+                notes: fd.get('notes'), lastModified: Date.now()
+            }).then(() => { editingId = null; renderIssues(); showNotification('Updated!', 'success'); });
         }
 
-        // Statistics
         function updateStatistics() {
-            const issuesArray = Object.values(issues);
-            document.getElementById('stat-critical').textContent = 
-                issuesArray.filter(i => i.priority === 'Critical' || i.priority === 'High').length;
-            document.getElementById('stat-open').textContent = 
-                issuesArray.filter(i => i.status === 'Open').length;
-            document.getElementById('stat-progress').textContent = 
-                issuesArray.filter(i => i.status === 'In Progress').length;
-            document.getElementById('stat-resolved').textContent = 
-                issuesArray.filter(i => i.status === 'Resolved' || i.status === 'Closed').length;
+            const arr = Object.values(issues);
+            document.getElementById('stat-critical').textContent = arr.filter(i => i.priority === 'Critical' || i.priority === 'High').length;
+            document.getElementById('stat-open').textContent = arr.filter(i => i.status === 'Open').length;
+            document.getElementById('stat-progress').textContent = arr.filter(i => i.status === 'In Progress').length;
+            document.getElementById('stat-resolved').textContent = arr.filter(i => i.status === 'Resolved' || i.status === 'Closed').length;
         }
 
-        // Render functions
         function renderIssues() {
-            const container = document.getElementById('issues-container');
-            const emptyState = document.getElementById('empty-state');
-            const issuesArray = Object.values(issues).sort((a, b) => b.createdAt - a.createdAt);
-            
-            if (issuesArray.length === 0) {
-                container.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            container.innerHTML = issuesArray.map(issue => {
-                return editingId === issue.id ? renderEditForm(issue) : renderIssueCard(issue);
-            }).join('');
+            const c = document.getElementById('issues-container');
+            const e = document.getElementById('empty-state');
+            const arr = Object.values(issues).sort((a, b) => b.createdAt - a.createdAt);
+            if (!arr.length) { c.innerHTML = ''; e.style.display = 'block'; return; }
+            e.style.display = 'none';
+            c.innerHTML = arr.map(i => editingId === i.id ? renderEditForm(i) : renderIssueCard(i)).join('');
         }
 
-        function renderEditForm(issue) {
-            return `
-                <div class="bg-white rounded-lg shadow-md p-6 fade-in">
-                    <form id="edit-form-${issue.id}" class="space-y-4">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label class="block text-sm font-medium text-gray-700 mb-1">Issue ID</label><input type="text" value="${issue.id}" disabled class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"></div>
-                                <div><label class="block text-sm font-medium text-gray-700 mb-1">Title*</label><input type="text" name="title" value="${issue.title}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></div>
-                            </div>
-                            <div class="flex gap-2 ml-4">
-                                <button type="button" onclick="saveEdit('${issue.id}')" class="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg></button>
-                                <button type="button" onclick="cancelEdit()" class="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-                            </div>
-                        </div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Description</label><textarea name="description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md">${issue.description}</textarea></div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Category</label><select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md">${categories.map(cat => `<option value="${cat}" ${issue.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}</select></div>
-                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Priority</label><select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-md">${priorities.map(pri => `<option value="${pri}" ${issue.priority === pri ? 'selected' : ''}>${pri}</option>`).join('')}</select></div>
-                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Status</label><select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md">${statuses.map(stat => `<option value="${stat}" ${issue.status === stat ? 'selected' : ''}>${stat}</option>`).join('')}</select></div>
-                            <div><label class="block text-sm font-medium text-gray-700
+        function renderEditForm(i) {
+            return `<div class="bg-white rounded-lg shadow-md p-6 fade-in"><form id="edit-form-${i.id}" class="space-y-4">
+                <div class="flex justify-between items-start"><div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">ID</label><input type="text" value="${i.id}" disabled class="w-full px-3 py-2 border rounded-md bg-gray-50"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Title</label><input type="text" name="title" value="${i.title}" class="w-full px-3 py-2 border rounded-md"></div>
+                </div><div class="flex gap-2 ml-4">
+                <button type="button" onclick="saveEdit('${i.id}')" class="p-2 bg-green-600 text-white rounded-lg">💾</button>
+                <button type="button" onclick="cancelEdit()" class="p-2 bg-gray-600 text-white rounded-lg">✖️</button>
+                </div></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Description</label><textarea name="description" rows="2" class="w-full px-3 py-2 border rounded-md">${i.description}</textarea></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Category</label><select name="category" class="w-full px-3 py-2 border rounded-md">${categories.map(c => `<option ${i.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Priority</label><select name="priority" class="w-full px-3 py-2 border rounded-md">${priorities.map(p => `<option ${i.priority===p?'selected':''}>${p}</option>`).join('')}</select></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Status</label><select name="status" class="w-full px-3 py-2 border rounded-md">${statuses.map(s => `<option ${i.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Date Raised</label><input type="date" name="dateRaised" value="${i.dateRaised}" class="w-full px-3 py-2 border rounded-md"></div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Raised By</label><input type="text" name="raisedBy" value="${i.raisedBy}" class="w-full px-3 py-2 border rounded-md"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label><input type="text" name="assignedTo" value="${i.assignedTo}" class="w-full px-3 py-2 border rounded-md"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label><input type="date" name="targetDate" value="${i.targetDate}" class="w-full px-3 py-2 border rounded-md"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Actual Date</label><input type="date" name="actualDate" value="${i.actualDate}" class="w-full px-3 py-2 border rounded-md"></div>
+                </div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Impact</label><textarea name="impact" rows="2" class="w-full px-3 py-2 border rounded-md">${i.impact}</textarea></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Resolution</label><textarea name="resolution" rows="2" class="w-full px-3 py-2 border rounded-md">${i.resolution}</textarea></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea name="notes" rows="2" class="w-full px-3 py-2 border rounded-md">${i.notes}</textarea></div>
+            </form></div>`;
+        }
+
+        function renderIssueCard(i) {
+            return `<div class="bg-white rounded-lg shadow-md p-6 fade-in"><div class="flex justify-between items-start mb-4"><div class="flex-1">
+                <div class="flex flex-wrap items-center gap-3 mb-2">
+                <span class="font-mono text-sm font-semibold text-gray-600">${i.id}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(i.priority)}">${i.priority}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(i.status)}">${i.status}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">${i.category}</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">${i.title || '(No title)'}</h3>
+                <p class="text-gray-700 mb-3">${i.description || '(No description)'}</p>
+                </div><div class="flex gap-2 ml-4">
+                ${canEdit() ? `<button onclick="startEdit('${i.id}')" class="p-2 bg-blue-600 text-white rounded-lg">✏️</button>` : ''}
+                ${canDelete() ? `<button onclick="deleteIssue('${i.id}')" class="p-2 bg-red-600 text-white rounded-lg">🗑️</button>` : ''}
+                </div></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div><span class="font-semibold text-gray-600">Raised By:</span><p>${i.raisedBy || '-'}</p></div>
+                <div><span class="font-semibold text-gray-600">Assigned To:</span><p>${i.assignedTo || '-'}</p></div>
+                <div><span class="font-semibold text-gray-600">Date Raised:</span><p>${i.dateRaised || '-'}</p></div>
+                <div><span class="font-semibold text-gray-600">Target Date:</span><p>${i.targetDate || '-'}</p></div>
+                </div>
+                ${i.impact ? `<div class="mt-3 text-sm"><span class="font-semibold text-gray-600">Impact:</span><p>${i.impact}</p></div>` : ''}
+                ${i.resolution ? `<div class="mt-3 text-sm"><span class="font-semibold text-gray-600">Resolution:</span><p>${i.resolution}</p></div>` : ''}
+                ${i.notes ? `<div class="mt-3 text-sm"><span class="font-semibold text-gray-600">Notes:</span><p>${i.notes}</p></div>` : ''}
+            </div>`;
+        }
+
+        function exportToCSV() {
+            const arr = Object.values(issues);
+            const csv = ['Issue ID,Title,Description,Category,Priority,Status,Raised By,Assigned To,Date Raised,Target Date,Actual Date,Impact,Resolution,Notes',
+                ...arr.map(i => [i.id,`"${i.title}"`,`"${i.description}"`,i.category,i.priority,i.status,i.raisedBy,i.assignedTo,i.dateRaised,i.targetDate,i.actualDate,`"${i.impact}"`,`"${i.resolution}"`,`"${i.notes}"`].join(','))].join('\n');
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'issues.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Exported!', 'success');
+        }
+
+        function showConfigModal() {
+            document.getElementById('config-modal').classList.add('active');
+            document.getElementById('config-adminCode').value = accessCodes.admin;
+            document.getElementById('config-editorCode').value = accessCodes.editor;
+            document.getElementById('config-viewerCode').value = accessCodes.viewer;
+        }
+
+        function closeConfigModal() { document.getElementById('config-modal').classList.remove('active'); }
+
+        function saveConfig() {
+            accessCodes = {
+                admin: document.getElementById('config-adminCode').value,
+                editor: document.getElementById('config-editorCode').value,
+                viewer: document.getElementById('config-viewerCode').value
+            };
+            localStorage.setItem('accessCodes', JSON.stringify(accessCodes));
+            closeConfigModal();
+            showNotification('Codes saved!', 'success');
+        }
+
+        window.onload = loadConfig;
+    </script>
+</body>
+</html>
