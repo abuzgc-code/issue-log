@@ -42,7 +42,7 @@
                     <li><strong>👁️ Viewer:</strong> Read-only</li>
                 </ul>
             </div>
-            <button onclick="showConfigModal()" class="w-full mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">⚙️ Change Codes</button>
+            <button id="config-btn-login" onclick="showConfigModal()" class="w-full mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm" style="display:none;">⚙️ Admin: Change Codes</button>
         </div>
     </div>
 
@@ -63,6 +63,9 @@
                         </button>
                         <button onclick="logout()" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
                             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Logout
+                        </button>
+                        <button id="config-btn-app" onclick="showConfigModal()" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700" style="display:none;">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>Settings
                         </button>
                     </div>
                 </div>
@@ -156,18 +159,27 @@
         function updateUIForRole() {
             const badge = document.getElementById('user-role-badge');
             const btn = document.getElementById('add-issue-btn');
+            const configBtnLogin = document.getElementById('config-btn-login');
+            const configBtnApp = document.getElementById('config-btn-app');
+            
             if (userRole === 'admin') {
                 badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800';
                 badge.textContent = '👑 Admin';
                 btn.style.display = 'flex';
+                if (configBtnLogin) configBtnLogin.style.display = 'block';
+                if (configBtnApp) configBtnApp.style.display = 'flex';
             } else if (userRole === 'editor') {
                 badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
                 badge.textContent = '✏️ Editor';
                 btn.style.display = 'flex';
+                if (configBtnLogin) configBtnLogin.style.display = 'none';
+                if (configBtnApp) configBtnApp.style.display = 'none';
             } else {
                 badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800';
                 badge.textContent = '👁️ Viewer';
                 btn.style.display = 'none';
+                if (configBtnLogin) configBtnLogin.style.display = 'none';
+                if (configBtnApp) configBtnApp.style.display = 'none';
             }
         }
 
@@ -328,6 +340,10 @@
         }
 
         function showConfigModal() {
+            if (userRole !== 'admin') {
+                showNotification('Only admins can change access codes', 'error');
+                return;
+            }
             document.getElementById('config-modal').classList.add('active');
             document.getElementById('config-adminCode').value = accessCodes.admin;
             document.getElementById('config-editorCode').value = accessCodes.editor;
